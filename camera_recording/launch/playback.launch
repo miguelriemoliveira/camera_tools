@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--    Plays back raw depth image and RGB image recorded using the associated record.launch from OpenNI device (kinect). The post-processing is then done to get a point-cloud. -->
+<launch>
+<arg name="rate" default="1.0"/>
+<arg name="delay" default="0.0"/>
+<arg name="start" default="0.0"/>
+<arg name="camera" default="camera"/>
+<arg name="use_view" default="false"/>
+
+<!-- Use simulated time: See http://mirror.umd.edu/roswiki/Clock.html for why -->
+<param name="/use_sim_time" value="true"/>
+
+<!-- Run all the normal processing stuff but tell openni.launch not to actually get any data from a real kinect (that will be supplied by the bag -->
+
+        <include file="$(find camera_recording)/launch/openni2.launch">
+        <arg name="load_driver" value="false"/>
+        <arg name="publish_tf" value="false"/>
+        <arg name="depth_registration" value="true"/>
+        <arg name="camera" value="$(arg camera)"/>
+        </include>
+
+        <!-- Read back a bag file recorded with the associated record.launch, which will then be processed by the nodes launched by openni.launch -->
+
+        <node pkg="rosbag" type="play" name="play" output="screen" required="true" args="$(arg bagname) --delay=$(arg delay) --clock -r $(arg rate) -s $(arg start)">
+        </node>
+
+<group if="$(arg use_view)">
+<node pkg="image_view" type="image_view" name="image_view" output="screen" required="true" args="image:=$(arg camera)/rgb/image_raw">
+</node>
+</group>
+
+</launch>

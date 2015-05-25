@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+<!-- Use simulated time: See http://mirror.umd.edu/roswiki/Clock.html for why -->
+<arg name="rate" default="1.0"/>
+<arg name="camera" default="camera"/>
+<arg name="throttle" default="10"/>
+
+<param name="/use_sim_time" value="true"/>
+
+<!--Play the bagfile renaming the topics-->
+<node pkg="rosbag" type="play" name="play" output="screen" required="true" args="$(arg bagname) --clock -r $(arg rate) --delay 2">
+    <remap from="/$(arg camera)/rgb/image_raw" to="/$(arg camera)_unthrottled/rgb/image_raw"/>
+    <remap from="/$(arg camera)/rgb/camera_info" to="/$(arg camera)_unthrottled/rgb/camera_info"/>
+    <remap from="/$(arg camera)/depth_registered/image_raw" to="/$(arg camera)_unthrottled/depth_registered/image_raw"/>
+    <remap from="/$(arg camera)/depth_registered/camera_info" to="/$(arg camera)_unthrottled/depth_registered/camera_info"/>
+</node>
+
+<!--Throttle the topics-->
+    <node name="throttle_rgb_image_raw" pkg="topic_tools" type="throttle" args=" messages /$(arg camera)_unthrottled/rgb/image_raw $(arg throttle) /$(arg camera)/rgb/image_raw" required="true"/>
+    <node name="throttle_rgb_camera_info" pkg="topic_tools" type="throttle" args=" messages /$(arg camera)_unthrottled/rgb/camera_info $(arg throttle) /$(arg camera)/rgb/camera_info" required="true"/>
+    <node name="throttle_depth_registered_image_raw" pkg="topic_tools" type="throttle" args=" messages /$(arg camera)_unthrottled/depth_registered/image_raw $(arg throttle) /$(arg camera)/depth_registered/image_raw" required="true"/>
+    <node name="throttle_depth_registered_camera_info" pkg="topic_tools" type="throttle" args=" messages /$(arg camera)_unthrottled/depth_registered/camera_info $(arg throttle) /$(arg camera)/depth_registered/camera_info" required="true"/>
+
+<!--Record a new bag file with throttled topics-->
+    <node pkg="rosbag" type="record" name="record" output="screen" args="/tf /$(arg camera)/depth_registered/camera_info /$(arg camera)/depth_registered/image_raw /$(arg camera)/rgb/camera_info /$(arg camera)/rgb/image_raw -O $(arg bagname)_$(arg throttle)hz.bag "/>
+
+
+</launch>
